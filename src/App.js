@@ -31,7 +31,7 @@ const App = () => {
       }
 
       // Call the API
-      const apiResponse = await fetch('http://localhost:4000/bfhl', {
+      const apiResponse = await fetch('https://bfhl-backend-gb6a.onrender.com/bfhl', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
