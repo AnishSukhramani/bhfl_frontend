@@ -26,25 +26,30 @@ const App = () => {
     try {
       // Validate JSON input
       const parsedData = JSON.parse(inputValue);
-      if (!Array.isArray(parsedData.data)) {
-        throw new Error('Invalid data format');
+      if (!parsedData || !Array.isArray(parsedData.data)) {
+        throw new Error('Invalid data format: data should be an array');
       }
 
       // Call the API
-      const res = await fetch('https://bfhl-backend-gb6a.onrender.com/bfhl', {
+      const apiResponse = await fetch('http://localhost:4000/bfhl', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(parsedData),
       });
-      const result = await res.json();
-      setResponse(result);
-      setError('');
+
+      if (!apiResponse.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const result = await apiResponse.json();
+      console.log('API Response:', result); // Log the API response
 
       // Apply filters to the response data
       const filteredData = filterResponse(result);
       setResponse(filteredData);
+      setError('');
     } catch (err) {
       setError(err.message);
       setResponse(null);
@@ -52,18 +57,26 @@ const App = () => {
   };
 
   const filterResponse = (data) => {
-    let filteredData = { data: [...data.data] };
+    if (!data || !data.data) {
+      return { numbers: [], alphabets: [], highest_lowercase_alphabet: [] };
+    }
 
-    if (selectedFilters.alphabets) {
-      filteredData.data = filteredData.data.filter(item => /^[a-zA-Z]+$/.test(item));
+    let filteredData = {
+      numbers: data.numbers || [],
+      alphabets: data.alphabets || [],
+      highest_lowercase_alphabet: data.highest_lowercase_alphabet || []
+    };
+
+    if (selectedFilters.alphabets && !selectedFilters.numbers && !selectedFilters.highestLowercase) {
+      return { numbers: [], alphabets: filteredData.alphabets, highest_lowercase_alphabet: [] };
     }
-    if (selectedFilters.numbers) {
-      filteredData.data = filteredData.data.filter(item => /^[0-9]+$/.test(item));
+
+    if (selectedFilters.numbers && !selectedFilters.alphabets && !selectedFilters.highestLowercase) {
+      return { numbers: filteredData.numbers, alphabets: [], highest_lowercase_alphabet: [] };
     }
+
     if (selectedFilters.highestLowercase) {
-      const lowercaseAlphabets = filteredData.data.filter(item => /^[a-z]+$/.test(item));
-      const highest = lowercaseAlphabets.reduce((max, current) => (current > max ? current : max), 'a');
-      filteredData.data = [highest];
+      return { numbers: [], alphabets: [], highest_lowercase_alphabet: filteredData.highest_lowercase_alphabet };
     }
 
     return filteredData;
